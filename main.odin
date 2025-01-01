@@ -6,73 +6,27 @@ import "core:mem"
 import "core:os"
 import rl "vendor:raylib"
 
+import "iso"
+
 PixelWindowHeight :: 1080
 PlayerSpeed :: 200
 
-TileHeight :: 128
 TileWidth :: 256
 
 DebugAllowed :: true
 Debugging := true
 
-grid_to_iso :: proc(x_grid: f32, y_grid: f32) -> rl.Vector2 {
-	return {(x_grid - y_grid) * TileWidth / 2, (x_grid + y_grid) * TileHeight / 3}
-}
-
-iso_to_grid :: proc(x_iso: f32, y_iso: f32) -> rl.Vector2 {
-	y_grid := (y_iso * 3 / TileHeight - x_iso * 2 / TileWidth) / 2
-	x_grid := y_grid + x_iso * 2 / TileWidth
-	return {x_grid, y_grid}
-}
-
-in_bounds :: proc(player_world_pos: rl.Vector2) -> bool {
-	grid_position := iso_to_grid(player_world_pos.x, player_world_pos.y)
-
+out_of_bounds :: proc(player_grid_pos: rl.Vector2, level_width: int) -> bool {
 	return(
-		grid_position.x >= 0.5 &&
-		grid_position.x <= 8.5 &&
-		grid_position.y >= -0.5 &&
-		grid_position.y <= 7.5 \
+		!(player_grid_pos.x >= 0 &&
+			player_grid_pos.x <= f32(level_width) &&
+			player_grid_pos.y >= 0 &&
+			player_grid_pos.y <= f32(level_width)) \
 	)
 }
 
-draw_tile :: proc(tile_id: int, x: int, y: int) {
-	if tile_id <= 0 {
-		return
-	}
-
-	texture := load_tile(cast(Tile)tile_id, TilePath[cast(Tile)tile_id])
-
-	x_screen := i32(x - y) * texture.width / 2
-	y_screen := i32(x + y) * texture.height / 3
-
-	dest := rl.Rectangle {
-		x      = f32(x_screen),
-		y      = f32(y_screen),
-		width  = f32(texture.width),
-		height = f32(texture.height),
-	}
-
-	rl.DrawTexturePro(
-		texture,
-		{0, 0, f32(texture.width), f32(texture.height)},
-		dest,
-		{0, 0},
-		0,
-		rl.WHITE,
-	)
-}
-
-draw_map :: proc(level: Level) {
-	for i in 0 ..< len(level.tile_map) {
-		for j in 0 ..< len(level.tile_map[i]) {
-			draw_tile(level.tile_map[i][j], i, j)
-		}
-	}
-}
-
-draw_player :: proc(pos: rl.Vector2) {
-	rl.DrawCircleV(pos, 10, rl.RED)
+tile_collision :: proc(player_grid_pos: rl.Vector2, level: Level) -> bool {
+	return level.collision_map[cast(int)player_grid_pos.x][cast(int)player_grid_pos.y]
 }
 
 main :: proc() {
@@ -115,7 +69,7 @@ main :: proc() {
 		}
 	}
 
-	player_pos = grid_to_iso(level.player_pos.x, level.player_pos.y)
+	player_pos = iso.grid_to_iso(level.player_pos.x, level.player_pos.y, TileWidth)
 
 	defer {
 		for i in 0 ..< len(level.tile_map) {
@@ -154,8 +108,11 @@ main :: proc() {
 
 			// Update player position
 			temp_player_pos := player_pos + player_vel * rl.GetFrameTime()
+			grid_position := iso.iso_to_grid(temp_player_pos.x, temp_player_pos.y, TileWidth)
 
-			if in_bounds(temp_player_pos) {
+
+			if !out_of_bounds(grid_position, len(level.tile_map)) &&
+			   !tile_collision(grid_position, level) {
 				player_pos = temp_player_pos
 			}
 
@@ -171,15 +128,19 @@ main :: proc() {
 
 		rl.BeginMode2D(camera)
 
-		draw_map(level)
+		draw_bg(level)
+		draw_fg(level, player_pos)
+
+		// draw_player(player_pos)
 
 		if (rl.IsKeyPressed(.P) && Debugging) {
 			fmt.printf("Player pos: %v\n", player_pos)
-			fmt.printf("Player grid pos: %v\n", iso_to_grid(player_pos.x, player_pos.y))
+			fmt.printf(
+				"Player grid pos: %v\n",
+				iso.iso_to_grid(player_pos.x, player_pos.y, TileWidth),
+			)
 
 		}
-
-		draw_player(player_pos)
 
 
 		rl.EndDrawing()

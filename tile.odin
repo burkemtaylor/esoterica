@@ -1,6 +1,5 @@
 package esoterica
 
-
 import rl "vendor:raylib"
 
 @(private = "file")
@@ -11,14 +10,14 @@ tile_map: [Tile]rl.Texture2D = #partial {
 Tile :: enum u8 {
 	Empty,
 	Wood,
-	Water,
+	Moss,
 	Grass,
 }
 
 TilePath := [Tile]cstring {
 	.Empty = "",
 	.Wood  = "textures/wood1.png",
-	.Water = "Water",
+	.Moss  = "textures/moss1.png",
 	.Grass = "Grass",
 }
 
