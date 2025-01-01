@@ -9,16 +9,18 @@ tile_map: [Tile]rl.Texture2D = #partial {
 
 Tile :: enum u8 {
 	Empty,
-	Wood,
-	Moss,
-	Grass,
+	Moss1,
+	Moss2,
+	Moss3,
+	Moss4,
 }
 
 TilePath := [Tile]cstring {
 	.Empty = "",
-	.Wood  = "textures/wood1.png",
-	.Moss  = "textures/moss1.png",
-	.Grass = "Grass",
+	.Moss1 = "textures/moss1.png",
+	.Moss2 = "textures/moss2.png",
+	.Moss3 = "textures/moss3.png",
+	.Moss4 = "textures/moss4.png",
 }
 
 /**
