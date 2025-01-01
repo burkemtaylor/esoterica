@@ -9,12 +9,14 @@ fg_map: [Foreground]rl.Texture2D = #partial {
 
 Foreground :: enum u8 {
 	Empty,
-	Turret,
+	Bush1,
+	Bush2,
 }
 
 ForegroundPath := [Foreground]cstring {
-	.Empty  = "",
-	.Turret = "textures/turret1.png",
+	.Empty = "",
+	.Bush1 = "textures/bush1.png",
+	.Bush2 = "textures/bush2.png",
 }
 
 /**

@@ -29,6 +29,21 @@ tile_collision :: proc(player_grid_pos: rl.Vector2, level: Level) -> bool {
 	return level.collision_map[cast(int)player_grid_pos.x][cast(int)player_grid_pos.y]
 }
 
+generate_collision_map :: proc(level: ^Level) {
+	x := make([dynamic][dynamic]bool, len(level.tile_map[0]), context.allocator)
+	for _, i in x {
+		x[i] = make([dynamic]bool, len(level.tile_map), context.allocator)
+	}
+	level.collision_map = x
+
+
+	for i in 0 ..< len(level.tile_map) {
+		for j in 0 ..< len(level.tile_map[i]) {
+			level.collision_map[i][j] = level.tile_map[i][j] <= 0 || level.foreground_map[i][j] > 0
+		}
+	}
+}
+
 main :: proc() {
 	{ 	// Set up memory tracking
 		track: mem.Tracking_Allocator
@@ -69,12 +84,16 @@ main :: proc() {
 		}
 	}
 
+	generate_collision_map(&level)
+
+
 	player_pos = iso.grid_to_iso(level.player_pos.x, level.player_pos.y, TileWidth)
 
 	defer {
-		for i in 0 ..< len(level.tile_map) {
-			delete(level.tile_map[i])
-		}
+		// for i in 0 ..< len(level.tile_map) {
+		// 	delete(level.tile_map[i])
+		// }
+		delete(level.collision_map)
 		delete(level.tile_map)
 	}
 
