@@ -40,13 +40,13 @@ draw_bg :: proc(level: Level) {
 	}
 }
 
-draw_fg :: proc(level: Level, player_pos: rl.Vector2) {
+draw_fg :: proc(level: Level, player_pos: rl.Vector2, a: Animation, flip: bool, debug: bool) {
 	for i in 0 ..< len(level.tile_map) {
 		for j in 0 ..< len(level.tile_map[i]) {
 			player_grid_pos := iso.iso_to_grid(player_pos.x, player_pos.y, TileWidth)
 
 			if (cast(int)player_grid_pos.x == i && cast(int)player_grid_pos.y == j) {
-				draw_player(player_pos)
+				draw_player(player_pos, a, flip, debug)
 			}
 
 			if (level.foreground_map[i][j] > 0) {
@@ -62,6 +62,33 @@ draw_fg :: proc(level: Level, player_pos: rl.Vector2) {
 	}
 }
 
-draw_player :: proc(pos: rl.Vector2) {
-	rl.DrawCircleV(pos, 10, rl.RED)
+draw_player :: proc(pos: rl.Vector2, a: Animation, flip: bool, debug: bool) {
+	current_anim_width := f32(a.texture.width)
+	current_anim_height := f32(a.texture.height)
+
+	player_run_source_frame_x := f32(a.current_frame) * current_anim_width
+
+	source := rl.Rectangle {
+		x      = player_run_source_frame_x / f32(a.num_frames),
+		y      = 0,
+		width  = current_anim_width / f32(a.num_frames),
+		height = current_anim_height,
+	}
+
+	if flip {
+		source.width *= -1
+	}
+
+	dest := rl.Rectangle {
+		x      = pos.x,
+		y      = pos.y,
+		width  = current_anim_width / f32(a.num_frames),
+		height = current_anim_height,
+	}
+
+	rl.DrawTexturePro(a.texture, source, dest, {dest.width / 2, dest.height}, 0, rl.WHITE)
+
+	if debug {
+		rl.DrawCircleV(pos, 10, rl.RED)
+	}
 }

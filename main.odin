@@ -2,14 +2,18 @@ package esoterica
 
 import "core:encoding/json"
 import "core:fmt"
+import "core:math"
 import "core:mem"
 import "core:os"
 import rl "vendor:raylib"
 
 import "iso"
 
+// TODO: isometric movement
+
 PixelWindowHeight :: 1080
-PlayerSpeed :: 200
+PlayerSpeed :: 250
+
 
 TileWidth :: 256
 
@@ -65,10 +69,28 @@ main :: proc() {
 
 	player_pos: rl.Vector2
 	player_vel: rl.Vector2
+	player_grounded: bool
+	player_flip: bool
 
 	rl.InitWindow(1280, 720, "esoterica")
 	rl.SetWindowState({.WINDOW_RESIZABLE})
 	rl.SetTargetFPS(500)
+
+	player_run := Animation {
+		texture      = rl.LoadTexture("textures/run.png"),
+		num_frames   = 5,
+		frame_length = 0.1,
+		name         = .Run,
+	}
+
+	player_idle := Animation {
+		texture      = rl.LoadTexture("textures/run.png"),
+		num_frames   = 5,
+		frame_length = 0.1,
+		name         = .Run,
+	}
+
+	current_anim := player_idle
 
 	background := rl.LoadTexture("assets/DarkAbstractBackgrounds_016.png")
 
@@ -90,9 +112,6 @@ main :: proc() {
 	player_pos = iso.grid_to_iso(level.player_pos.x, level.player_pos.y, TileWidth)
 
 	defer {
-		// for i in 0 ..< len(level.tile_map) {
-		// 	delete(level.tile_map[i])
-		// }
 		delete(level.collision_map)
 		delete(level.tile_map)
 	}
@@ -107,23 +126,37 @@ main :: proc() {
 		}
 
 		{ 	// Player Movement 
+			is_moving: bool
+
 			// X-axis movement
 			if rl.IsKeyDown(.A) && !rl.IsKeyDown(.D) {
-				player_vel.x = -PlayerSpeed
+				player_vel.x = -1
+				player_flip = true
 			} else if rl.IsKeyDown(.D) && !rl.IsKeyDown(.A) {
-				player_vel.x = PlayerSpeed
+				player_vel.x = 1
+				player_flip = false
 			} else {
 				player_vel.x = 0
 			}
 
 			// Y-axis movement
 			if rl.IsKeyDown(.W) && !rl.IsKeyDown(.S) {
-				player_vel.y = -PlayerSpeed
+				player_vel.y = -1
 			} else if rl.IsKeyDown(.S) && !rl.IsKeyDown(.W) {
-				player_vel.y = PlayerSpeed
+				player_vel.y = 1
 			} else {
 				player_vel.y = 0
 			}
+
+			is_moving = (abs(player_vel.x) + abs(player_vel.y)) > 0
+
+			if (current_anim.name != .Run && is_moving) {
+				current_anim = player_run
+			} else if (current_anim.name != .Idle && !is_moving) {
+				current_anim = player_idle
+			}
+
+			player_vel *= PlayerSpeed / (abs(player_vel.x) + abs(player_vel.y))
 
 			// Update player position
 			temp_player_pos := player_pos + player_vel * rl.GetFrameTime()
@@ -134,6 +167,8 @@ main :: proc() {
 			   !tile_collision(grid_position, level) {
 				player_pos = temp_player_pos
 			}
+
+			animation_update(&current_anim)
 
 		}
 
@@ -148,7 +183,7 @@ main :: proc() {
 		rl.BeginMode2D(camera)
 
 		draw_bg(level)
-		draw_fg(level, player_pos)
+		draw_fg(level, player_pos, current_anim, player_flip, Debugging)
 
 		// draw_player(player_pos)
 
